@@ -87,3 +87,16 @@ You can also instantiate a request object and send the request:
                 })
                 .get();
 ```
+
+A default host and header can be set using static methods.
+
+When the default host is set, you do not need to supply a host to your requests. If you do supply a host however, the default host will not be used for that single request.
+
+It is not necessary to supply an http header. The default header sets the field "Content-Type" to "application/json".
+If you do supply a header to the request, the header will be used for that single request instead of the default header.
+
+Example:
+```java
+HttpRequest.setDefaultHost("http://www.yourhost.com");
+HttpRequest.setDefaultHeaders(new HashMap<String,String>());
+```
