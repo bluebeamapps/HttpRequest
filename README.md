@@ -88,6 +88,7 @@ You can also instantiate a request object and send the request:
                 .get();
 ```
 
+
 A default host and header can be set using static methods.
 
 When the default host is set, you do not need to supply a host to your requests. If you do supply a host however, the default host will not be used for that single request.
