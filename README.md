@@ -58,3 +58,32 @@ Http POST:
             }
         });
 ```
+
+You can also instantiate a request object and send the request:
+```java
+        String host = "http://www.mocky.io/v2";
+        String path = "56945888110000731483a72f";
+
+        //Use .headers() and .params() to set your headers and params.
+        new HttpRequest(getContext())
+                .host(host)
+                .path(path)
+                .listener(new HttpRequest.OnHttpRequestFinishedListener() {
+                    @Override
+                    public void onHttpRequestSuccess(int statusCode, String data) {
+                        //Handle successful response.
+                        try {
+                            JSONObject jsonObject = new JSONObject(data);
+                            Log.d("HttpRequest", jsonObject.getString("message"));
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    @Override
+                    public void onHttpRequestError(int statusCode, String data) {
+
+                    }
+                })
+                .get();
+```
