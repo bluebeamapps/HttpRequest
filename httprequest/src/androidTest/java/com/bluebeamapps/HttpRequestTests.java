@@ -23,7 +23,7 @@ public class HttpRequestTests extends AndroidTestCase {
         HttpRequest.get(getContext(), host, path, new HttpRequest.OnHttpRequestFinishedListener() {
             @Override
             public void onHttpRequestSuccess(int statusCode, String data) {
-                assertTrue(statusCode != -1);
+                assertTrue(statusCode != -1 && data != null && !data.isEmpty());
                 signal.countDown();
             }
 
@@ -42,14 +42,20 @@ public class HttpRequestTests extends AndroidTestCase {
 
         String host = "http://httpbin.org";
         String path = "post";
-        final String body = "{\"message\":\"Hello World\"}";
+        final JSONObject body = new JSONObject();
 
-        HttpRequest.post(getContext(), host, path, body, new HttpRequest.OnHttpRequestFinishedListener() {
+        try {
+            body.put("message", "Hello World");
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        HttpRequest.post(getContext(), host, path, body.toString(), new HttpRequest.OnHttpRequestFinishedListener() {
             @Override
             public void onHttpRequestSuccess(int statusCode, String data) {
                 try {
                     JSONObject jsonObject = new JSONObject(data);
-                    assertEquals(jsonObject.getString("data"), body);
+                    assertEquals(jsonObject.getString("data"), body.toString());
                 } catch (JSONException e) {
                     e.printStackTrace();
                 } finally {
@@ -63,6 +69,33 @@ public class HttpRequestTests extends AndroidTestCase {
                 signal.countDown();
             }
         });
+
+        signal.await();
+    }
+
+    public void testHttpRequestGet() throws InterruptedException {
+        final CountDownLatch signal = new CountDownLatch(1);
+
+        String host = "http://www.mocky.io/v2";
+        String path = "56945888110000731483a72f";
+
+        new HttpRequest(getContext())
+                .host(host)
+                .path(path)
+                .listener(new HttpRequest.OnHttpRequestFinishedListener() {
+                    @Override
+                    public void onHttpRequestSuccess(int statusCode, String data) {
+                        assertTrue(statusCode != -1 && data != null && !data.isEmpty());
+                        signal.countDown();
+                    }
+
+                    @Override
+                    public void onHttpRequestError(int statusCode, String data) {
+                        assertTrue(statusCode != -1);
+                        signal.countDown();
+                    }
+                })
+                .get();
 
         signal.await();
     }
