@@ -24,6 +24,7 @@ import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.Volley;
+import com.bluebeamapps.httprequest.BBAStringRequest;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -50,6 +51,7 @@ public class HttpRequest {
     public interface OnHttpRequestFinishedListener {
         void onHttpRequestSuccess(int statusCode, String data);
         void onHttpRequestError(int statusCode, String data);
+        void onHttpRequestFinally();
     }
 
     /** Convenience function for the http method GET. */
@@ -98,6 +100,33 @@ public class HttpRequest {
         sDefaultHeaders = defaultHeaders;
     }
 
+    /** Set a key/value on the default Http headers.
+     * <p>The default Http headers will be used on every request unless an Http header is supplied
+     * through the method headers() on the request object. </p>*/
+    public static void setDefaultHeadersValue(String key, String value) {
+        if (sDefaultHeaders == null) {
+            sDefaultHeaders = new HashMap<>();
+        }
+
+        sDefaultHeaders.put(key, value);
+    }
+
+    /** Remove a key from the default Http headers.
+     * <p>The default Http headers will be used on every request unless an Http header is supplied
+     * through the method headers() on the request object. </p>*/
+    public static void removeFromDefaultHeaders(String key) {
+        if (sDefaultHeaders != null) {
+            sDefaultHeaders.remove(key);
+        }
+    }
+
+    /** Clear all keys from the default Http headers.
+     * <p>The default Http headers will be used on every request unless an Http header is supplied
+     * through the method headers() on the request object. </p>*/
+    public static void clearDefaultHeaders() {
+        sDefaultHeaders = null;
+    }
+
     /** Instantiates a new Http request object. */
     public HttpRequest(Context context) {
         if (sQueue == null) {
@@ -106,8 +135,9 @@ public class HttpRequest {
 
         if (sDefaultHeaders == null) {
             sDefaultHeaders = new HashMap<>();
-            sDefaultHeaders.put("Content-Type", "application/json");
         }
+
+        sDefaultHeaders.put("Content-Type", "application/json");
 
         this.host = sDefaultHost;
         this.headers = sDefaultHeaders;
@@ -219,7 +249,11 @@ public class HttpRequest {
 
     public HttpRequest send() {
         if (host == null || host.isEmpty()) {
-            throw new IllegalArgumentException(TAG + ": Host cannot be null or empty");
+            if (sDefaultHost != null && !sDefaultHost.isEmpty()) {
+                host = sDefaultHost;
+            } else {
+                throw new IllegalArgumentException(TAG + ": Host cannot be null or empty");
+            }
         }
 
         int method = parseMethod(this.method);
@@ -233,6 +267,7 @@ public class HttpRequest {
                 if (listener != null) {
                     int statusCode = HttpRequest.this.request.getStatusCode();
                     listener.onHttpRequestSuccess(statusCode, response);
+                    listener.onHttpRequestFinally();
                 }
             }
         }, new Response.ErrorListener() {
@@ -250,11 +285,19 @@ public class HttpRequest {
                     }
 
                     listener.onHttpRequestError(statusCode, data);
+                    listener.onHttpRequestFinally();
                 }
             }
         });
 
-        request.setHeaders(headers);
+        if (headers == null && sDefaultHeaders != null) {
+            headers = sDefaultHeaders;
+        }
+
+        if (headers != null) {
+            request.setHeaders(headers);
+        }
+
         request.setBody(body);
 
         sQueue.add(request);
